@@ -1,0 +1,10 @@
+start:
+    docker-compose up
+    docker-compose exec api ./watchmate/manage.py runserver 0.0.0.0:8080
+
+When createing a app
+python manage.py startapp app_name
+add to the settings list in app/app/settings.py INSTALLED_APPS
+
+admin user:
+    Yugo, password

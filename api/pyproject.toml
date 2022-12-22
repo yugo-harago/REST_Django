@@ -1,0 +1,108 @@
+[tool.poetry]
+name = "ce-platform"
+version = "1.0.0"
+description = ""
+authors = ["CreditEngine Inc. <dev@creditengine.jp>"]
+
+[tool.poetry.dependencies]
+python = "~3.10"
+bleach = {extras = ["css"], version = "*"}
+boto3 = "*"
+celery = "*"
+chardet = "*"
+django = "~4.1"
+django-axes = "*"
+django-celery-results = "*"
+django-cleanup = "*"
+django-filter = "*"
+django-model-utils = "*"
+django-sequences = "*"
+django-storages = "*"
+django-view-table = "*"
+djangorestframework = "*"
+drf-jwt = "*"
+drf-nested-routers = "*"
+easy-thumbnails = "*"
+gevent = "*"
+gunicorn = "*"
+Markdown = "*"
+mojimoji = "*"
+mozilla-django-oidc = "*"
+pdf2image = "*"
+pdfkit = "*"
+phonenumbers = "*"
+Pillow = "*"
+pillow-heif = "*"
+psycogreen = "*"
+psycopg2 = "*"
+PyJWT = "*"
+pyyaml = "*"
+requests = "*"
+requests_oauthlib = "*"
+single-beat = "*"
+sqlparse = "*"
+pdfrw = ""
+reportlab = ""
+
+[tool.poetry.dev-dependencies]
+black = "*"
+coverage = "*"
+debugpy = "*"
+django-extensions = "*"
+django-modelsdoc = "*"
+factory-boy = "*"
+flake8 = "*"
+flake8-annotations = "*"
+flake8-docstrings = "*"
+graphviz = "*"
+isort = "*"
+mypy = "*"
+nplusone = "*"
+pip-licenses = "*"
+pydotplus = "*"
+responses = "*"
+tblib = "*"
+time-machine = "*"
+types-bleach = "*"
+types-chardet = "*"
+types-python-dateutil = "*"
+types-PyYAML = "*"
+types-requests = "*"
+celery-types = "*"
+django-stubs = "*"
+djangorestframework-stubs = "*"
+
+[build-system]
+requires = ["poetry>=0.12"]
+build-backend = "poetry.masonry.api"
+
+[tool.black]
+line-length = 88
+target-version = ['py310']
+exclude = "migrations"
+
+[tool.mypy]
+exclude = "migrations"
+
+[[tool.mypy.overrides]]
+module = [
+    'axes.*',
+    'boto3.*',
+    'celery.*',
+    'django.*',
+    'django_extensions.*',
+    'django_filters.*',
+    'easy_thumbnails.*',
+    'factory.*',
+    'josepy.*',
+    'model_utils.*',
+    'mozilla_django_oidc.*',
+    'pdf2image.*',
+    'pdfkit.*',
+    'PIL.*',
+    'rest_framework.*',
+    'rest_framework_jwt.*',
+    'sequences.*',
+    'view_table.*'
+]
+ignore_missing_imports = true

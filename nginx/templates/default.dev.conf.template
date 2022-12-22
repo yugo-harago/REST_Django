@@ -1,0 +1,109 @@
+server {
+    listen 80;
+    server_name localhost;
+    charset utf-8;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+
+    # 脆弱性対策
+    server_tokens off;
+    etag off;
+    add_header X-Frame-Options SAMEORIGIN;
+    add_header X-XSS-Protection "1; mode=block";
+    # 開発環境では不要な設定
+    # add_header X-Content-Type-Options nosniff;
+    # add_header Referrer-Policy same-origin;
+    # add_header Strict-Transport-Security "max-age=31536000; includeSubDomains; preload" always;
+    # add_header Permissions-Policy "accelerometer=(),autoplay=(),camera=(),display-capture=(),document-domain=(),encrypted-media=(),fullscreen=(),geolocation=(),gyroscope=(),magnetometer=(),microphone=(),midi=(),payment=(),picture-in-picture=(),publickey-credentials-get=(),screen-wake-lock=(),sync-xhr=(self),usb=(),web-share=(),xr-spatial-tracking=()" always;
+    # 開発環境では以下が追加されている
+    # connect-src ws://localhost/ wss://localhost/
+    add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://kit.fontawesome.com/b6005a40e6.js https://www.google-analytics.com https://ssl.google-analytics.com https://www.googletagmanager.com https://creditengine.github.io; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; object-src 'none'; child-src 'self'; base-uri 'self'; connect-src 'self' data: https://ka-p.fontawesome.com https://www.google-analytics.com ws://localhost:${PORT_OFFSET}80/ wss://localhost:${PORT_OFFSET}443/; font-src 'self' https://fonts.gstatic.com https://ka-p.fontawesome.com; frame-src 'self'; frame-ancestors 'self'; img-src 'self' blob: data: https://www.google-analytics.com www.googletagmanager.com; manifest-src 'self'; media-src 'self'; worker-src 'none'; upgrade-insecure-requests; block-all-mixed-content" always;
+
+    # Cross-Site WebSocket Hijacking対策
+    set $websocket_same_origin_policy deny;
+    if ($http_upgrade != websocket) {
+        set $websocket_same_origin_policy allow;
+    }
+    set $port_offset "${PORT_OFFSET}";
+    set $scheme_port "";
+    set $forwarded_proto_port "";
+    if ($port_offset != "") {
+        set $scheme_port ":${PORT_OFFSET}80";
+        set $forwarded_proto_port ":${PORT_OFFSET}443";
+    }
+    if ($http_origin = $scheme://$server_name$scheme_port) {
+        set $websocket_same_origin_policy allow;
+    }
+    if ($http_origin = $http_x_forwarded_proto://$server_name$forwarded_proto_port) {
+        set $websocket_same_origin_policy allow;
+    }
+
+    # gzip圧縮を有効化
+    gzip on;
+    gzip_disable "msie6";
+    gzip_vary on;
+    gzip_proxied any;
+    gzip_min_length 1500;
+    gzip_static on;
+    gzip_types text/plain text/css text/javascript application/javascript application/json
+        text/xml application/xml application/xml+rss image/svg+xml;
+
+    # キャッシュを無効化
+    add_header Pragma no-cache;
+    add_header Cache-Control "private, no-store, no-cache, must-revalidate, proxy-revalidate";
+
+    # frontの配信設定
+    location / {
+        proxy_http_version 1.1;
+        proxy_pass http://host.docker.internal:${PORT_OFFSET}3200;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+    }
+
+    # backofficeの配信設定
+    location /backoffice/ {
+        proxy_http_version 1.1;
+        proxy_pass http://host.docker.internal:${PORT_OFFSET}3300;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+    }
+
+    # socket.ioの設定
+    location /event/v1 {
+        # Cross-Site WebSocket Hijacking対策
+        if ($websocket_same_origin_policy != allow) {
+            return 403;
+        }
+        proxy_http_version 1.1;
+        proxy_pass http://host.docker.internal:${PORT_OFFSET}3100;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+    }
+
+    # rosterの設定
+    location /api {
+        proxy_pass http://roster:8080;
+        proxy_connect_timeout 300s;
+        proxy_send_timeout 300s;
+        proxy_read_timeout 300s;
+    }
+
+    # ファイルアップロードの設定
+    location ~* ^/api/v1/(upload|avatars|.*/:upload) {
+        # 10MBまでアップロード可能にする
+        client_max_body_size 10M;
+        proxy_pass http://roster:8080;
+        proxy_connect_timeout 300s;
+        proxy_send_timeout 300s;
+        proxy_read_timeout 300s;
+    }
+
+    # マスキング処理の設定
+    location ~* ^/api/v1/.*/:update-image {
+        # 20MBまでアップロード可能にする
+        client_max_body_size 20M;
+        proxy_pass http://roster:8080;
+        proxy_connect_timeout 300s;
+        proxy_send_timeout 300s;
+        proxy_read_timeout 300s;
+    }
+}
